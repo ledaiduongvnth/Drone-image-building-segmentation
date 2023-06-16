@@ -7,8 +7,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 
-IMAGE_HEIGHT = 650  # 650 originally
-IMAGE_WIDTH = 650  # 650 originally
+IMAGE_HEIGHT = 325  # 650 originally
+IMAGE_WIDTH = 325  # 650 originally
 
 model = UNET(in_channels=3, out_channels=1).to(DEVICE)
 
@@ -43,13 +43,13 @@ def image_loader(image_name):
 
 
 image = image_loader(
-    "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen/RGB-PanSharpen_AOI_5_Khartoum_img20.tif")
+    "/mnt/hdd/PycharmProjects/Drone-image-building-segmentation/i2.png")
 
 with torch.no_grad():
     preds = torch.sigmoid(model(image))
     preds = (preds > 0.5).float()
 torchvision.utils.save_image(
-    preds, f"/mnt/hdd/PycharmProjects/SpaceNet7-Buildings-Detection/a.png"
+    preds, f"/mnt/hdd/PycharmProjects/Drone-image-building-segmentation/a.png"
 )
 
 # import matplotlib.image as mpimg

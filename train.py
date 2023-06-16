@@ -26,7 +26,7 @@ class SpaceNetDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-        img_path = os.path.join(self.image_dir, self.images[index].replace("mask.tif", ".tif"))
+        img_path = os.path.join(self.image_dir, self.images[index].replace("mask.tif", ".jpeg"))
         mask_path = os.path.join(self.mask_dir, self.images[index])
         image = io.imread(img_path)
         mask = io.imread(mask_path)
@@ -144,12 +144,12 @@ BATCH_SIZE = 8
 NUM_EPOCHS = 200
 NUM_WORKERS = 2
 IMAGE_HEIGHT = 325  # 650 originally
-IMAGE_WIDTH = 352  # 650 originally
+IMAGE_WIDTH = 325  # 650 originally
 PIN_MEMORY = True
 LOAD_MODEL = False
-TRAIN_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen/"
+TRAIN_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen-8bit/"
 TRAIN_MASK_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/masktif/"
-VAL_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen/"
+VAL_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen-8bit/"
 VAL_MASK_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/masktif/"
 
 
@@ -246,7 +246,7 @@ def main():
         # print some examples to a folder
         save_predictions_as_imgs(
             val_loader, model,
-            folder="/mnt/hdd/PycharmProjects/SpaceNet7-Buildings-Detection/output/",
+            folder="/mnt/hdd/PycharmProjects/Drone-image-building-segmentation/output/",
             device=DEVICE
         )
 
