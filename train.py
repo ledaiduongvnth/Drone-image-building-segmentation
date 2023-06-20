@@ -102,8 +102,7 @@ def check_accuracy(loader, model,
             x = x.to(device)
             y = y.to(device).unsqueeze(1)
             preds = torch.sigmoid(model(x))
-            preds = (
-                        preds > 0.5).float()  # While implementing this check_accuracy def from some source, it didn't have .float() so I added that.
+            preds = (preds > 0.5).float()  # While implementing this check_accuracy def from some source, it didn't have .float() so I added that.
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
             dice_score += (2 * (preds * y).sum()) / (
@@ -140,11 +139,11 @@ def save_predictions_as_imgs(
 # Hyperparameters etc.
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 8
+BATCH_SIZE = 2
 NUM_EPOCHS = 200
 NUM_WORKERS = 2
-IMAGE_HEIGHT = 325  # 650 originally
-IMAGE_WIDTH = 325  # 650 originally
+IMAGE_HEIGHT = 650  # 650 originally
+IMAGE_WIDTH = 650  # 650 originally
 PIN_MEMORY = True
 LOAD_MODEL = False
 TRAIN_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen-8bit/"
@@ -238,7 +237,8 @@ def main():
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(checkpoint)
+        filename = "model"+"_"+str(IMAGE_HEIGHT)+".pt"
+        save_checkpoint(checkpoint, filename)
 
         # check accuracy
         check_accuracy(val_loader, model, device=DEVICE)
