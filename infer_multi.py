@@ -14,8 +14,7 @@ IMAGE_WIDTH = 325  # 650 originally
 
 model = UNET(in_channels=3, out_channels=1).to(DEVICE)
 
-model.load_state_dict(torch.load("model0_325.pt")["state_dict"])
-# load_checkpoint(torch.load("my_checkpoint.pth.tar"), model2)
+model.load_state_dict(torch.load("/mnt/hdd/PycharmProjects/Drone-image-building-segmentation/model_325_epoch73_.pt")["state_dict"])
 model.eval()
 
 loader1 = A.Compose(

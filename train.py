@@ -12,6 +12,7 @@ from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 from unet import UNET
 
+# Create SpaceNet Dataset
 class SpaceNetDataset(Dataset):
     def __init__(self, image_dir, mask_dir, transform=None):
         # All necessary information for training from Dataset method
@@ -41,11 +42,6 @@ class SpaceNetDataset(Dataset):
 
 
 """# Utils"""
-
-
-def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
-    print("=> Saving checkpoint")
-    torch.save(state, filename)
 
 
 def get_loaders(
@@ -117,39 +113,19 @@ def check_accuracy(loader, model,
     model.train()
 
 
-def save_predictions_as_imgs(
-        loader, model, folder="", device="cuda"
-):
-    model.eval()
-    # try:
-    for idx, (x, y) in enumerate(loader):
-        x = x.to(device=device)
-        with torch.no_grad():
-            preds = torch.sigmoid(model(x))
-            preds = (preds > 0.5).float()
-        torchvision.utils.save_image(
-            preds, f"{folder}/pred_{idx}.png"
-
-        )
-        torchvision.utils.save_image(y.unsqueeze(1).float(), f"{folder}{idx}.png")
-
-
 """# Training"""
-
-# Hyperparameters etc.
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 NUM_EPOCHS = 200
 NUM_WORKERS = 2
-IMAGE_HEIGHT = 650  # 650 originally
-IMAGE_WIDTH = 650  # 650 originally
+IMAGE_SIZE = 325
 PIN_MEMORY = True
 LOAD_MODEL = False
-TRAIN_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen-8bit/"
-TRAIN_MASK_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/masktif/"
-VAL_IMG_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/RGB-PanSharpen-8bit/"
-VAL_MASK_DIR = "/mnt/hdd/Datasets/AOI_5_Khartoum_Train/masktif/"
+TRAIN_IMG_DIR = "/mnt/hdd/Datasets/mixed-building-detection/train/RGB-PanSharpen-8bit/"
+TRAIN_MASK_DIR = "/mnt/hdd/Datasets/mixed-building-detection/train/masktif/"
+VAL_IMG_DIR = "/mnt/hdd/Datasets/mixed-building-detection/val/RGB-PanSharpen-8bit/"
+VAL_MASK_DIR = "/mnt/hdd/Datasets/mixed-building-detection/val/masktif/"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):  # General Structure
@@ -176,25 +152,12 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):  # General Structure
 
 
 def main():
-    # Transform class which has resize, rotate, horizontal and vertical flip and normalization
     train_transform = A.Compose(
         [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
+            A.Resize(height=IMAGE_SIZE, width=IMAGE_SIZE),
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,  # We need a number between 0-1 so we divide the result to 255.0
-            ),
-            ToTensorV2(),
-        ],
-    )
-
-    val_transforms = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
             A.Normalize(
                 mean=[0.0, 0.0, 0.0],
                 std=[1.0, 1.0, 1.0],
@@ -204,12 +167,23 @@ def main():
         ],
     )
 
-    model = UNET(in_channels=3, out_channels=1).to(
-        DEVICE)  # Our out_channels = 1 just for now. But for the rest of the project, digitization will have apprx. at least 100 classes.
-    loss_fn = nn.BCEWithLogitsLoss()  # On our output, we don't have sigmoid function. So I used binary cross entropy with logits loss.
+    val_transforms = A.Compose(
+        [
+            A.Resize(height=IMAGE_SIZE, width=IMAGE_SIZE),
+            A.Normalize(
+                mean=[0.0, 0.0, 0.0],
+                std=[1.0, 1.0, 1.0],
+                max_pixel_value=255.0,
+            ),
+            ToTensorV2(),
+        ],
+    )
+
+    model = UNET(in_channels=3, out_channels=1).to(DEVICE)
+    loss_fn = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    train_loader, val_loader = get_loaders(  # It is ugly, but let's bring our all loaders.
+    train_loader, val_loader = get_loaders(
         TRAIN_IMG_DIR,
         TRAIN_MASK_DIR,
         VAL_IMG_DIR,
@@ -222,33 +196,20 @@ def main():
     )
 
     if LOAD_MODEL:
-        print("=> Loading checkpoint")
         model.load_state_dict(torch.load("my_checkpoint.pth.tar")["state_dict"])
-        # load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
 
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
 
     for epoch in range(NUM_EPOCHS):
         train_fn(train_loader, model, optimizer, loss_fn, scaler)  # Let's send everything to train function.
-
-        # save model
         checkpoint = {
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        filename = "model"+"_"+str(IMAGE_HEIGHT)+".pt"
-        save_checkpoint(checkpoint, filename)
-
-        # check accuracy
+        filename = "model"+"_"+str(IMAGE_SIZE)+ "_epoch" + str(epoch) + "_" + ".pt"
+        torch.save(checkpoint, filename)
         check_accuracy(val_loader, model, device=DEVICE)
-
-        # print some examples to a folder
-        save_predictions_as_imgs(
-            val_loader, model,
-            folder="/mnt/hdd/PycharmProjects/Drone-image-building-segmentation/output/",
-            device=DEVICE
-        )
 
 
 if __name__ == "__main__":

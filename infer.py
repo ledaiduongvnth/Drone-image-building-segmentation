@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
-IMAGE_HEIGHT = 325  # 650 originally
-IMAGE_WIDTH = 325  # 650 originally
+IMAGE_HEIGHT = 650
+IMAGE_WIDTH = 650
 
 model = UNET(in_channels=3, out_channels=1).to(DEVICE)
 
